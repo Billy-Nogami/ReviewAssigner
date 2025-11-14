@@ -1,0 +1,235 @@
+definitions:
+  schemas.Team:
+    properties:
+      members:
+        items:
+          $ref: '#/definitions/schemas.User'
+        type: array
+      team_name:
+        type: string
+    type: object
+  schemas.User:
+    properties:
+      is_active:
+        type: boolean
+      team_name:
+        type: string
+      user_id:
+        type: string
+      username:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /health:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - Health
+  /pullRequest/create:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: PR data
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Создать PR
+      tags:
+      - PullRequests
+  /pullRequest/merge:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: PR ID
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Merge PR
+      tags:
+      - PullRequests
+  /pullRequest/reassign:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Reassign data
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Reassign reviewer
+      tags:
+      - PullRequests
+  /team/add:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Team data
+        in: body
+        name: team
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.Team'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Создать команду
+      tags:
+      - Teams
+  /team/get:
+    get:
+      parameters:
+      - description: Team name
+        in: query
+        name: team_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.Team'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Получить команду
+      tags:
+      - Teams
+  /users/getReview:
+    get:
+      parameters:
+      - description: User ID
+        in: query
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Получить PR пользователя
+      tags:
+      - Users
+  /users/setIsActive:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User active data
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Установить активность пользователя
+      tags:
+      - Users
+swagger: "2.0"

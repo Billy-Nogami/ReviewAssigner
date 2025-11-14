@@ -1,4 +1,5 @@
-package entities
+package schemas
+
 type User struct {
     ID       string `json:"user_id" db:"user_id"`
     Username string `json:"username" db:"username"`
