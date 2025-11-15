@@ -14,6 +14,9 @@ import (
 	"ReviewAssigner/internal/usecase/pr"
 	"ReviewAssigner/internal/usecase/team"
 	"ReviewAssigner/internal/usecase/user"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	swaggerFiles "github.com/swaggo/files"
+	_ "ReviewAssigner/docs"
 )
 
 // @title ReviewAssigner
@@ -50,7 +53,12 @@ func InitApp() *gin.Engine {
 
 	// Handlers
 	handlers := http.NewHandlers(teamUsecase, userUsecase, prUsecase)
-	handlers.RegisterRoutes(r)
+	
+	// УДАЛЕНО: второй вызов RegisterRoutes
+	handlers.RegisterRoutes(r) // ← ТОЛЬКО ОДИН РАЗ!
+
+	// Swagger
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Логирование
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))

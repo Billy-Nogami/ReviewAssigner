@@ -1,7 +1,10 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "description": "Service for assigning reviewers to Pull Requests",
+        "title": "ReviewAssigner",
+        "contact": {},
+        "version": "1.0"
     },
     "paths": {
         "/health": {

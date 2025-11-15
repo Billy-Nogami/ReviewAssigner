@@ -8,7 +8,7 @@
 ## API
 
 - Health: GET /health
+- См. docs/openapi.yaml или /swagger/index.html (если добавите swag UI).
 
 ## Тестирование
-
 - Линтер: `golangci-lint run`

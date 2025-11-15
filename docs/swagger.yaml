@@ -21,6 +21,9 @@ definitions:
     type: object
 info:
   contact: {}
+  description: Service for assigning reviewers to Pull Requests
+  title: ReviewAssigner
+  version: "1.0"
 paths:
   /health:
     get:

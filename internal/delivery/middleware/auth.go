@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"net/http"
-
+    "strings"
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,7 +13,8 @@ const (
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if c.Request.URL.Path == "/health" {
+
+		if c.Request.URL.Path == "/health" || strings.HasPrefix(c.Request.URL.Path, "/swagger/") {
 			c.Next()
 			return
 		}
