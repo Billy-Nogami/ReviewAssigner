@@ -65,7 +65,7 @@ func InitApp() *gin.Engine {
 	protected.Use(middleware.AuthMiddleware())
 	{
 		handlers := http.NewHandlers(teamUsecase, userUsecase, prUsecase)
-		
+
 		// Регистрируем routes в protected группе
 		protected.POST("/team/add", handlers.CreateTeam)
 		protected.GET("/team/get", handlers.GetTeam)

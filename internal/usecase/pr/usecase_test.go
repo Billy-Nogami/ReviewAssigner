@@ -3,7 +3,6 @@ package pr
 import (
 	"testing"
 	"time"
-	"ReviewAssigner/internal/domain/interfaces"
 	"ReviewAssigner/internal/domain/schemas"
 	pkgerrors "ReviewAssigner/internal/pkg/errors"
 
@@ -72,28 +71,40 @@ func (m *MockPullRequestRepository) Exists(id string) (bool, error) {
 	return args.Bool(0), args.Error(1)
 }
 
+func (m *MockPullRequestRepository) GetStats() (map[string]int, map[string]int, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, nil, args.Error(2)
+	}
+	return args.Get(0).(map[string]int), args.Get(1).(map[string]int), args.Error(2)
+}
+
 func TestUsecase_CreatePR_Success(t *testing.T) {
-	mockUserRepo := &MockUserRepository{}
-	mockPRRepo := &MockPullRequestRepository{}
+	mockUserRepo := new(MockUserRepository)
+	mockPRRepo := new(MockPullRequestRepository)
 	usecase := NewUsecase(mockUserRepo, mockPRRepo)
 
 	author := &schemas.User{ID: "u1", TeamName: "backend"}
 	candidates := []schemas.User{{ID: "u2"}}
-	pr := &schemas.PullRequest{ID: "pr1", AuthorID: "u1", Status: "OPEN", AssignedReviewers: []string{"u2"}}
 
 	mockPRRepo.On("Exists", "pr1").Return(false, nil)
 	mockUserRepo.On("GetByID", "u1").Return(author, nil)
 	mockUserRepo.On("GetActiveByTeam", "backend", "u1").Return(candidates, nil)
-	mockPRRepo.On("Create", pr).Return(nil)
+	mockPRRepo.On("Create", mock.AnythingOfType("*schemas.PullRequest")).Return(nil)
 
 	result, err := usecase.CreatePR("pr1", "Test", "u1")
 	assert.NoError(t, err)
-	assert.Equal(t, pr.ID, result.ID)
+	assert.Equal(t, "pr1", result.ID)
+	assert.Equal(t, "Test", result.Name)
+	assert.Equal(t, "u1", result.AuthorID)
+
+	mockPRRepo.AssertExpectations(t)
+	mockUserRepo.AssertExpectations(t)
 }
 
 func TestUsecase_MergePR_Idempotent(t *testing.T) {
-	mockUserRepo := &MockUserRepository{}
-	mockPRRepo := &MockPullRequestRepository{}
+	mockUserRepo := new(MockUserRepository)
+	mockPRRepo := new(MockPullRequestRepository)
 	usecase := NewUsecase(mockUserRepo, mockPRRepo)
 
 	pr := &schemas.PullRequest{ID: "pr1", Status: "MERGED"}
@@ -102,20 +113,30 @@ func TestUsecase_MergePR_Idempotent(t *testing.T) {
 	result, err := usecase.MergePR("pr1")
 	assert.NoError(t, err)
 	assert.Equal(t, "MERGED", result.Status)
+
+	mockPRRepo.AssertExpectations(t)
 }
 
 func TestUsecase_ReassignPR_NoCandidate(t *testing.T) {
-	mockUserRepo := &MockUserRepository{}
-	mockPRRepo := &MockPullRequestRepository{}
+	mockUserRepo := new(MockUserRepository)
+	mockPRRepo := new(MockPullRequestRepository)
 	usecase := NewUsecase(mockUserRepo, mockPRRepo)
 
-	pr := &schemas.PullRequest{ID: "pr1", Status: "OPEN", AssignedReviewers: []string{"u2"}}
+	pr := &schemas.PullRequest{
+		ID:                "pr1",
+		Status:            "OPEN",
+		AuthorID:          "u1",
+		AssignedReviewers: []string{"u2"},
+	}
 	oldUser := &schemas.User{ID: "u2", TeamName: "backend"}
 
 	mockPRRepo.On("GetByID", "pr1").Return(pr, nil)
 	mockUserRepo.On("GetByID", "u2").Return(oldUser, nil)
-	mockUserRepo.On("GetActiveByTeam", "backend", "u1").Return([]schemas.User{}, nil)
+	mockUserRepo.On("GetActiveByTeam", "backend", mock.AnythingOfType("string")).Return([]schemas.User{}, nil)
 
 	_, _, err := usecase.ReassignPR("pr1", "u2")
 	assert.Equal(t, pkgerrors.ErrNoCandidate, err)
+
+	mockPRRepo.AssertExpectations(t)
+	mockUserRepo.AssertExpectations(t)
 }

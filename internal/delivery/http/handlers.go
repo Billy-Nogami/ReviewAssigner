@@ -39,10 +39,10 @@ func NewHandlers(teamUsecase *team.Usecase, userUsecase *user.Usecase, prUsecase
 
 func (h *Handlers) RegisterRoutes(r *gin.Engine) {
 	r.GET("/health", h.Health)
-	
+
 	// Public routes
 	r.POST("/auth/login", h.Login)
-	
+
 	// Protected routes
 	protected := r.Group("/")
 	protected.Use(middleware.AuthMiddleware())
@@ -91,12 +91,12 @@ func (h *Handlers) CreateTeam(c *gin.Context) {
 		c.JSON(400, gin.H{"error": gin.H{"code": "BAD_REQUEST", "message": err.Error()}})
 		return
 	}
-	
+
 	teamData := &schemas.Team{
 		Name:    req.Name,
 		Members: req.Members,
 	}
-	
+
 	team, err := h.teamUsecase.CreateTeam(teamData)
 	if err != nil {
 		handleError(c, err)

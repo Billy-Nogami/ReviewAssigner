@@ -18,3 +18,10 @@ type PullRequest struct {
     AuthorID string `json:"author_id"`
     Status   string `json:"status"`
   }
+
+  type PRStats struct {
+	TotalPRs    int `json:"total_prs"`
+	OpenPRs     int `json:"open_prs"`
+	MergedPRs   int `json:"merged_prs"`
+	ReviewCount int `json:"review_count"`
+}

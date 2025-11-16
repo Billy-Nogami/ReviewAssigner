@@ -1,9 +1,7 @@
 package team
 
 import (
-	"errors"
 	"testing"
-	"ReviewAssigner/internal/domain/interfaces"
 	"ReviewAssigner/internal/domain/schemas"
 	pkgerrors "ReviewAssigner/internal/pkg/errors"
 

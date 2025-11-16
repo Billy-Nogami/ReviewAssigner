@@ -2,8 +2,9 @@ package user
 
 import (
 	"testing"
-	"ReviewAssigner/internal/domain/schema"
+	"ReviewAssigner/internal/domain/schemas"
 	pkgerrors "ReviewAssigner/internal/pkg/errors"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -14,48 +15,48 @@ type MockUserRepository struct {
 	mock.Mock
 }
 
-func (m *MockUserRepository) GetByID(userID string) (*schema.User, error) {
+func (m *MockUserRepository) GetByID(userID string) (*schemas.User, error) {
 	args := m.Called(userID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*schema.User), args.Error(1)
+	return args.Get(0).(*schemas.User), args.Error(1)
 }
 
-func (m *MockUserRepository) UpdateIsActive(userID string, isActive bool) (*schema.User, error) {
+func (m *MockUserRepository) UpdateIsActive(userID string, isActive bool) (*schemas.User, error) {
 	args := m.Called(userID, isActive)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*schema.User), args.Error(1)
+	return args.Get(0).(*schemas.User), args.Error(1)
 }
 
-func (m *MockUserRepository) GetActiveByTeam(teamName string, excludeUserID string) ([]schema.User, error) {
+func (m *MockUserRepository) GetActiveByTeam(teamName string, excludeUserID string) ([]schemas.User, error) {
 	args := m.Called(teamName, excludeUserID)
-	return args.Get(0).([]schema.User), args.Error(1)
+	return args.Get(0).([]schemas.User), args.Error(1)
 }
 
-// Mock для PullRequestRepository (добавлены все методы интерфейса)
+// Mock для PullRequestRepository
 type MockPullRequestRepository struct {
 	mock.Mock
 }
 
-func (m *MockPullRequestRepository) Create(pr *schema.PullRequest) error {
+func (m *MockPullRequestRepository) Create(pr *schemas.PullRequest) error {
 	args := m.Called(pr)
 	return args.Error(0)
 }
 
-func (m *MockPullRequestRepository) GetByID(id string) (*schema.PullRequest, error) {
+func (m *MockPullRequestRepository) GetByID(id string) (*schemas.PullRequest, error) {
 	args := m.Called(id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*schema.PullRequest), args.Error(1)
+	return args.Get(0).(*schemas.PullRequest), args.Error(1)
 }
 
-func (m *MockPullRequestRepository) UpdateStatus(id string, status string, mergedAt *time.Time) (*schema.PullRequest, error) {
+func (m *MockPullRequestRepository) UpdateStatus(id string, status string, mergedAt *time.Time) (*schemas.PullRequest, error) {
 	args := m.Called(id, status, mergedAt)
-	return args.Get(0).(*schema.PullRequest), args.Error(1)
+	return args.Get(0).(*schemas.PullRequest), args.Error(1)
 }
 
 func (m *MockPullRequestRepository) UpdateReviewers(id string, reviewers []string) error {
@@ -63,9 +64,9 @@ func (m *MockPullRequestRepository) UpdateReviewers(id string, reviewers []strin
 	return args.Error(0)
 }
 
-func (m *MockPullRequestRepository) GetByReviewerID(userID string) ([]schema.PullRequestShort, error) {
+func (m *MockPullRequestRepository) GetByReviewerID(userID string) ([]schemas.PullRequestShort, error) {
 	args := m.Called(userID)
-	return args.Get(0).([]schema.PullRequestShort), args.Error(1)
+	return args.Get(0).([]schemas.PullRequestShort), args.Error(1)
 }
 
 func (m *MockPullRequestRepository) Exists(id string) (bool, error) {
@@ -73,12 +74,20 @@ func (m *MockPullRequestRepository) Exists(id string) (bool, error) {
 	return args.Bool(0), args.Error(1)
 }
 
+func (m *MockPullRequestRepository) GetStats() (map[string]int, map[string]int, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, nil, args.Error(2)
+	}
+	return args.Get(0).(map[string]int), args.Get(1).(map[string]int), args.Error(2)
+}
+
 func TestUsecase_SetIsActive_Success(t *testing.T) {
-	mockUserRepo := &MockUserRepository{}
-	mockPRRepo := &MockPullRequestRepository{}
+	mockUserRepo := new(MockUserRepository)
+	mockPRRepo := new(MockPullRequestRepository)
 	usecase := NewUsecase(mockUserRepo, mockPRRepo)
 
-	user := &schema.User{ID: "u1", IsActive: true}
+	user := &schemas.User{ID: "u1", IsActive: true}
 	mockUserRepo.On("UpdateIsActive", "u1", false).Return(user, nil)
 
 	result, err := usecase.SetIsActive("u1", false)
@@ -87,8 +96,8 @@ func TestUsecase_SetIsActive_Success(t *testing.T) {
 }
 
 func TestUsecase_SetIsActive_NotFound(t *testing.T) {
-	mockUserRepo := &MockUserRepository{}
-	mockPRRepo := &MockPullRequestRepository{}
+	mockUserRepo := new(MockUserRepository)
+	mockPRRepo := new(MockPullRequestRepository)
 	usecase := NewUsecase(mockUserRepo, mockPRRepo)
 
 	mockUserRepo.On("UpdateIsActive", "u1", false).Return(nil, nil)
@@ -98,12 +107,12 @@ func TestUsecase_SetIsActive_NotFound(t *testing.T) {
 }
 
 func TestUsecase_GetUserReviews_Success(t *testing.T) {
-	mockUserRepo := &MockUserRepository{}
-	mockPRRepo := &MockPullRequestRepository{}
+	mockUserRepo := new(MockUserRepository)
+	mockPRRepo := new(MockPullRequestRepository)
 	usecase := NewUsecase(mockUserRepo, mockPRRepo)
 
-	user := &schema.User{ID: "u1"}
-	prs := []schema.PullRequestShort{{ID: "pr1"}}
+	user := &schemas.User{ID: "u1"}
+	prs := []schemas.PullRequestShort{{ID: "pr1"}}
 	mockUserRepo.On("GetByID", "u1").Return(user, nil)
 	mockPRRepo.On("GetByReviewerID", "u1").Return(prs, nil)
 

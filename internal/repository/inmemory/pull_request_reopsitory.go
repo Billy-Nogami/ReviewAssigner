@@ -2,12 +2,14 @@ package inmemory
 
 import (
 	"errors"
+	"sync"
 	"time"
 	"ReviewAssigner/internal/domain/interfaces"
 	"ReviewAssigner/internal/domain/schemas"
 )
 
 type pullRequestRepository struct {
+	mu        sync.RWMutex
 	prs       map[string]*schemas.PullRequest
 	reviewers map[string][]string // prID -> []userID
 }
@@ -20,6 +22,9 @@ func NewPullRequestRepository() interfaces.PullRequestRepository {
 }
 
 func (r *pullRequestRepository) Create(pr *schemas.PullRequest) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	if _, exists := r.prs[pr.ID]; exists {
 		return errors.New("PR already exists")
 	}
@@ -29,6 +34,9 @@ func (r *pullRequestRepository) Create(pr *schemas.PullRequest) error {
 }
 
 func (r *pullRequestRepository) GetByID(id string) (*schemas.PullRequest, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
 	pr, exists := r.prs[id]
 	if !exists {
 		return nil, nil
@@ -38,6 +46,9 @@ func (r *pullRequestRepository) GetByID(id string) (*schemas.PullRequest, error)
 }
 
 func (r *pullRequestRepository) UpdateStatus(id string, status string, mergedAt *time.Time) (*schemas.PullRequest, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	pr, exists := r.prs[id]
 	if !exists {
 		return nil, errors.New("PR not found")
@@ -48,6 +59,9 @@ func (r *pullRequestRepository) UpdateStatus(id string, status string, mergedAt 
 }
 
 func (r *pullRequestRepository) UpdateReviewers(id string, reviewers []string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	if _, exists := r.prs[id]; !exists {
 		return errors.New("PR not found")
 	}
@@ -56,6 +70,9 @@ func (r *pullRequestRepository) UpdateReviewers(id string, reviewers []string) e
 }
 
 func (r *pullRequestRepository) GetByReviewerID(userID string) ([]schemas.PullRequestShort, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
 	var prs []schemas.PullRequestShort
 	for prID, reviewers := range r.reviewers {
 		for _, rID := range reviewers {
@@ -75,12 +92,40 @@ func (r *pullRequestRepository) GetByReviewerID(userID string) ([]schemas.PullRe
 }
 
 func (r *pullRequestRepository) Exists(id string) (bool, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
 	_, exists := r.prs[id]
 	return exists, nil
 }
 
+// GetStats возвращает статистику по pull requests
+func (r *pullRequestRepository) GetStats() (map[string]int, map[string]int, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	userStats := make(map[string]int)  // userID -> количество ревью
+	prStats := make(map[string]int)    // prID -> количество ревьюверов
+
+	// Собираем статистику по пользователям (сколько ревью у каждого)
+	for prID, reviewers := range r.reviewers {
+		// Статистика по PR
+		prStats[prID] = len(reviewers)
+
+		// Статистика по пользователям
+		for _, userID := range reviewers {
+			userStats[userID]++
+		}
+	}
+
+	return userStats, prStats, nil
+}
+
 // Методы для тестов: AddPR для инициализации
 func (r *pullRequestRepository) AddPR(pr *schemas.PullRequest) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	r.prs[pr.ID] = pr
 	r.reviewers[pr.ID] = pr.AssignedReviewers
 }
