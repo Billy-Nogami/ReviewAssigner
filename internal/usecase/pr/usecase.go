@@ -156,3 +156,7 @@ func (u *Usecase) ReassignPR(prID, oldUserID string) (*schemas.PullRequest, stri
 	pr, _ = u.prRepo.GetByID(prID)
 	return pr, newReviewer, nil
 }
+
+func (u *Usecase) GetStats() (map[string]int, map[string]int, error) {
+    return u.prRepo.GetStats()
+}

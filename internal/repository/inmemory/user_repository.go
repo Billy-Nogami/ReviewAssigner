@@ -7,14 +7,14 @@ import (
 )
 
 type userRepository struct {
-	users map[string]*schema.User
+	users map[string]*schemas.User
 }
 
 func NewUserRepository() interfaces.UserRepository {
-	return &userRepository{users: make(map[string]*schema.User)}
+	return &userRepository{users: make(map[string]*schemas.User)}
 }
 
-func (r *userRepository) GetByID(userID string) (*schema.User, error) {
+func (r *userRepository) GetByID(userID string) (*schemas.User, error) {
 	user, exists := r.users[userID]
 	if !exists {
 		return nil, nil
@@ -22,7 +22,7 @@ func (r *userRepository) GetByID(userID string) (*schema.User, error) {
 	return user, nil
 }
 
-func (r *userRepository) UpdateIsActive(userID string, isActive bool) (*schema.User, error) {
+func (r *userRepository) UpdateIsActive(userID string, isActive bool) (*schemas.User, error) {
 	user, exists := r.users[userID]
 	if !exists {
 		return nil, errors.New("user not found")
@@ -31,8 +31,8 @@ func (r *userRepository) UpdateIsActive(userID string, isActive bool) (*schema.U
 	return user, nil
 }
 
-func (r *userRepository) GetActiveByTeam(teamName string, excludeUserID string) ([]schema.User, error) {
-	var users []schema.User
+func (r *userRepository) GetActiveByTeam(teamName string, excludeUserID string) ([]schemas.User, error) {
+	var users []schemas.User
 	for _, user := range r.users {
 		if user.TeamName == teamName && user.IsActive && user.ID != excludeUserID {
 			users = append(users, *user)
@@ -42,6 +42,6 @@ func (r *userRepository) GetActiveByTeam(teamName string, excludeUserID string) 
 }
 
 // Методы для тестов: AddUser для инициализации
-func (r *userRepository) AddUser(user *schema.User) {
+func (r *userRepository) AddUser(user *schemas.User) {
 	r.users[user.ID] = user
 }

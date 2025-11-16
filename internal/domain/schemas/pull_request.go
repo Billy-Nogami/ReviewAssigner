@@ -18,4 +18,3 @@ type PullRequest struct {
     AuthorID string `json:"author_id"`
     Status   string `json:"status"`
   }
-  

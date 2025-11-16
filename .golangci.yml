@@ -11,3 +11,4 @@ linters:
     - gosimple
     - gocyclo
     - misspell
+    - gosec

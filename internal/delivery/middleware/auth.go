@@ -1,39 +1,42 @@
 package middleware
 
 import (
-	"net/http"
-    "strings"
+	"strings"
+	"ReviewAssigner/internal/pkg/jwt"
 	"github.com/gin-gonic/gin"
-)
-
-const (
-	AdminToken = "admin-secret"
-	UserToken  = "user-secret"
 )
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-
-		if c.Request.URL.Path == "/health" || strings.HasPrefix(c.Request.URL.Path, "/swagger/") {
+		if c.Request.URL.Path == "/health" || strings.HasPrefix(c.Request.URL.Path, "/swagger/") || c.Request.URL.Path == "/auth/login" {
 			c.Next()
 			return
 		}
 
-		if c.Request.Method != "GET" {
-			adminToken := c.GetHeader("AdminToken")
-			if adminToken != AdminToken {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"code": "UNAUTHORIZED", "message": "Invalid admin token"}})
-				c.Abort()
-				return
-			}
-		} else {
-			userToken := c.GetHeader("UserToken")
-			adminToken := c.GetHeader("AdminToken")
-			if userToken != UserToken && adminToken != AdminToken {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": gin.H{"code": "UNAUTHORIZED", "message": "Invalid token"}})
-				c.Abort()
-				return
-			}
+		authHeader := c.GetHeader("Authorization")
+		if !strings.HasPrefix(authHeader, "Bearer ") {
+			c.JSON(401, gin.H{"error": gin.H{"code": "UNAUTHORIZED", "message": "Missing or invalid token"}})
+			c.Abort()
+			return
+		}
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+
+		claims, err := jwt.ValidateToken(tokenString)
+		if err != nil {
+			c.JSON(401, gin.H{"error": gin.H{"code": "UNAUTHORIZED", "message": "Invalid token"}})
+			c.Abort()
+			return
+		}
+
+		// Сохраняем claims в контексте
+		c.Set("user_id", claims.UserID)
+		c.Set("role", claims.Role)
+
+		// Проверяем роль для POST/PUT/DELETE
+		if c.Request.Method != "GET" && claims.Role != "admin" {
+			c.JSON(403, gin.H{"error": gin.H{"code": "FORBIDDEN", "message": "Admin role required"}})
+			c.Abort()
+			return
 		}
 
 		c.Next()

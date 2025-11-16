@@ -15,6 +15,46 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/auth/login": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Логин для получения JWT",
+                "parameters": [
+                    {
+                        "description": "Login data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.LoginResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "produces": [
@@ -39,6 +79,11 @@ const docTemplate = `{
         },
         "/pullRequest/create": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -56,8 +101,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.CreatePRRequest"
                         }
                     }
                 ],
@@ -88,6 +132,11 @@ const docTemplate = `{
         },
         "/pullRequest/merge": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -105,8 +154,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.MergePRRequest"
                         }
                     }
                 ],
@@ -130,6 +178,11 @@ const docTemplate = `{
         },
         "/pullRequest/reassign": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -147,8 +200,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.ReassignPRRequest"
                         }
                     }
                 ],
@@ -177,8 +229,38 @@ const docTemplate = `{
                 }
             }
         },
+        "/stats": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Statistics"
+                ],
+                "summary": "Получить статистику назначений",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/team/add": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -192,11 +274,11 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "description": "Team data",
-                        "name": "team",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/schemas.Team"
+                            "$ref": "#/definitions/http.CreateTeamRequest"
                         }
                     }
                 ],
@@ -220,6 +302,11 @@ const docTemplate = `{
         },
         "/team/get": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -230,6 +317,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "example": "\"backend\"",
                         "description": "Team name",
                         "name": "team_name",
                         "in": "query",
@@ -255,6 +343,11 @@ const docTemplate = `{
         },
         "/users/getReview": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -265,6 +358,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "example": "\"user123\"",
                         "description": "User ID",
                         "name": "user_id",
                         "in": "query",
@@ -291,6 +385,11 @@ const docTemplate = `{
         },
         "/users/setIsActive": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -308,8 +407,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.SetUserActiveRequest"
                         }
                     }
                 ],
@@ -333,6 +431,112 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "http.CreatePRRequest": {
+            "type": "object",
+            "properties": {
+                "author_id": {
+                    "description": "@Example: user123",
+                    "type": "string",
+                    "example": "user123"
+                },
+                "pull_request_id": {
+                    "description": "@Example: pr-123",
+                    "type": "string",
+                    "example": "pr-123"
+                },
+                "pull_request_name": {
+                    "description": "@Example: \"Add new feature\"",
+                    "type": "string",
+                    "example": "Add new feature"
+                }
+            }
+        },
+        "http.CreateTeamRequest": {
+            "type": "object",
+            "properties": {
+                "members": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.User"
+                    }
+                },
+                "name": {
+                    "description": "@Example: backend",
+                    "type": "string",
+                    "example": "backend"
+                }
+            }
+        },
+        "http.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "description": "@Example: admin",
+                    "type": "string",
+                    "example": "admin"
+                },
+                "user_id": {
+                    "description": "@Example: admin",
+                    "type": "string",
+                    "example": "admin"
+                }
+            }
+        },
+        "http.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "role": {
+                    "description": "@Example: admin",
+                    "type": "string",
+                    "example": "admin"
+                },
+                "token": {
+                    "description": "@Example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                }
+            }
+        },
+        "http.MergePRRequest": {
+            "type": "object",
+            "properties": {
+                "pull_request_id": {
+                    "description": "@Example: pr-123",
+                    "type": "string",
+                    "example": "pr-123"
+                }
+            }
+        },
+        "http.ReassignPRRequest": {
+            "type": "object",
+            "properties": {
+                "old_user_id": {
+                    "description": "@Example: user123",
+                    "type": "string",
+                    "example": "user123"
+                },
+                "pull_request_id": {
+                    "description": "@Example: pr-123",
+                    "type": "string",
+                    "example": "pr-123"
+                }
+            }
+        },
+        "http.SetUserActiveRequest": {
+            "type": "object",
+            "properties": {
+                "is_active": {
+                    "description": "@Example: true",
+                    "type": "boolean",
+                    "example": true
+                },
+                "user_id": {
+                    "description": "@Example: user123",
+                    "type": "string",
+                    "example": "user123"
+                }
+            }
+        },
         "schemas.Team": {
             "type": "object",
             "properties": {
@@ -364,17 +568,25 @@ const docTemplate = `{
                 }
             }
         }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and JWT token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "",
-	BasePath:         "",
+	Host:             "localhost:8080",
+	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "ReviewAssigner",
-	Description:      "Service for assigning reviewers to Pull Requests",
+	Title:            "Review Assigner API",
+	Description:      "API for assigning code reviewers to pull requests",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

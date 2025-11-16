@@ -7,4 +7,3 @@ type UserRepository interface {
     UpdateIsActive(userID string, isActive bool) (*schemas.User, error)
     GetActiveByTeam(teamName string, excludeUserID string) ([]schemas.User, error) // Для выбора ревьюверов
 }
-  

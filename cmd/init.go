@@ -4,24 +4,21 @@ import (
 	"log"
 	"os"
 
-	"github.com/gin-gonic/gin"
-	_ "github.com/lib/pq"
-	"github.com/jmoiron/sqlx"
-	"golang.org/x/exp/slog"
 	"ReviewAssigner/internal/delivery/http"
 	"ReviewAssigner/internal/delivery/middleware"
 	"ReviewAssigner/internal/repository/postgres"
 	"ReviewAssigner/internal/usecase/pr"
 	"ReviewAssigner/internal/usecase/team"
 	"ReviewAssigner/internal/usecase/user"
-	ginSwagger "github.com/swaggo/gin-swagger"
+
+	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	swaggerFiles "github.com/swaggo/files"
-	_ "ReviewAssigner/docs"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	"golang.org/x/exp/slog"
 )
 
-// @title ReviewAssigner
-// @version 1.0
-// @description Service for assigning reviewers to Pull Requests
 func InitApp() *gin.Engine {
 	// Конфиг из env
 	dbHost := os.Getenv("DB_HOST")
@@ -49,16 +46,36 @@ func InitApp() *gin.Engine {
 
 	// Gin-сервер
 	r := gin.Default()
-	r.Use(middleware.AuthMiddleware()) // Middleware
-
-	// Handlers
-	handlers := http.NewHandlers(teamUsecase, userUsecase, prUsecase)
-	
-	// УДАЛЕНО: второй вызов RegisterRoutes
-	handlers.RegisterRoutes(r) // ← ТОЛЬКО ОДИН РАЗ!
 
 	// Swagger
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// Health check (публичный)
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
+	})
+
+	// Login (публичный) - временная заглушка
+	r.POST("/auth/login", func(c *gin.Context) {
+		c.JSON(200, gin.H{"token": "test-jwt-token-12345"})
+	})
+
+	// Protected routes
+	protected := r.Group("/")
+	protected.Use(middleware.AuthMiddleware())
+	{
+		handlers := http.NewHandlers(teamUsecase, userUsecase, prUsecase)
+		
+		// Регистрируем routes в protected группе
+		protected.POST("/team/add", handlers.CreateTeam)
+		protected.GET("/team/get", handlers.GetTeam)
+		protected.POST("/users/setIsActive", handlers.SetUserActive)
+		protected.GET("/users/getReview", handlers.GetUserReviews)
+		protected.POST("/pullRequest/create", handlers.CreatePR)
+		protected.POST("/pullRequest/merge", handlers.MergePR)
+		protected.POST("/pullRequest/reassign", handlers.ReassignPR)
+		protected.GET("/stats", handlers.GetStats)
+	}
 
 	// Логирование
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))

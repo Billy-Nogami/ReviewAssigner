@@ -8,18 +8,18 @@ import (
 )
 
 type pullRequestRepository struct {
-	prs       map[string]*schema.PullRequest
+	prs       map[string]*schemas.PullRequest
 	reviewers map[string][]string // prID -> []userID
 }
 
 func NewPullRequestRepository() interfaces.PullRequestRepository {
 	return &pullRequestRepository{
-		prs:       make(map[string]*schema.PullRequest),
+		prs:       make(map[string]*schemas.PullRequest),
 		reviewers: make(map[string][]string),
 	}
 }
 
-func (r *pullRequestRepository) Create(pr *schema.PullRequest) error {
+func (r *pullRequestRepository) Create(pr *schemas.PullRequest) error {
 	if _, exists := r.prs[pr.ID]; exists {
 		return errors.New("PR already exists")
 	}
@@ -28,7 +28,7 @@ func (r *pullRequestRepository) Create(pr *schema.PullRequest) error {
 	return nil
 }
 
-func (r *pullRequestRepository) GetByID(id string) (*schema.PullRequest, error) {
+func (r *pullRequestRepository) GetByID(id string) (*schemas.PullRequest, error) {
 	pr, exists := r.prs[id]
 	if !exists {
 		return nil, nil
@@ -37,7 +37,7 @@ func (r *pullRequestRepository) GetByID(id string) (*schema.PullRequest, error) 
 	return pr, nil
 }
 
-func (r *pullRequestRepository) UpdateStatus(id string, status string, mergedAt *time.Time) (*schema.PullRequest, error) {
+func (r *pullRequestRepository) UpdateStatus(id string, status string, mergedAt *time.Time) (*schemas.PullRequest, error) {
 	pr, exists := r.prs[id]
 	if !exists {
 		return nil, errors.New("PR not found")
@@ -55,13 +55,13 @@ func (r *pullRequestRepository) UpdateReviewers(id string, reviewers []string) e
 	return nil
 }
 
-func (r *pullRequestRepository) GetByReviewerID(userID string) ([]schema.PullRequestShort, error) {
-	var prs []schema.PullRequestShort
+func (r *pullRequestRepository) GetByReviewerID(userID string) ([]schemas.PullRequestShort, error) {
+	var prs []schemas.PullRequestShort
 	for prID, reviewers := range r.reviewers {
 		for _, rID := range reviewers {
 			if rID == userID {
 				pr := r.prs[prID]
-				prs = append(prs, schema.PullRequestShort{
+				prs = append(prs, schemas.PullRequestShort{
 					ID:       pr.ID,
 					Name:     pr.Name,
 					AuthorID: pr.AuthorID,
@@ -80,7 +80,7 @@ func (r *pullRequestRepository) Exists(id string) (bool, error) {
 }
 
 // Методы для тестов: AddPR для инициализации
-func (r *pullRequestRepository) AddPR(pr *schema.PullRequest) {
+func (r *pullRequestRepository) AddPR(pr *schemas.PullRequest) {
 	r.prs[pr.ID] = pr
 	r.reviewers[pr.ID] = pr.AssignedReviewers
 }

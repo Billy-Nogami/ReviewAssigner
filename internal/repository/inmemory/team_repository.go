@@ -7,14 +7,14 @@ import (
 )
 
 type teamRepository struct {
-	teams map[string]*schema.Team
+	teams map[string]*schemas.Team
 }
 
 func NewTeamRepository() interfaces.TeamRepository {
-	return &teamRepository{teams: make(map[string]*schema.Team)}
+	return &teamRepository{teams: make(map[string]*schemas.Team)}
 }
 
-func (r *teamRepository) Create(team *schema.Team) error {
+func (r *teamRepository) Create(team *schemas.Team) error {
 	if _, exists := r.teams[team.Name]; exists {
 		return errors.New("team already exists")
 	}
@@ -22,7 +22,7 @@ func (r *teamRepository) Create(team *schema.Team) error {
 	return nil
 }
 
-func (r *teamRepository) GetByName(name string) (*schema.Team, error) {
+func (r *teamRepository) GetByName(name string) (*schemas.Team, error) {
 	team, exists := r.teams[name]
 	if !exists {
 		return nil, nil
@@ -36,6 +36,6 @@ func (r *teamRepository) Exists(name string) (bool, error) {
 }
 
 // Методы для тестов: AddTeam для инициализации
-func (r *teamRepository) AddTeam(team *schema.Team) {
+func (r *teamRepository) AddTeam(team *schemas.Team) {
 	r.teams[team.Name] = team
 }

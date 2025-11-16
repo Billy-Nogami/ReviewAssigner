@@ -6,4 +6,3 @@ type User struct {
     TeamName string `json:"team_name" db:"team_name"`
     IsActive bool   `json:"is_active" db:"is_active"`
 }
-  

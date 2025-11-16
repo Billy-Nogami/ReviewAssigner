@@ -1,12 +1,54 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "Service for assigning reviewers to Pull Requests",
-        "title": "ReviewAssigner",
+        "description": "API for assigning code reviewers to pull requests",
+        "title": "Review Assigner API",
         "contact": {},
         "version": "1.0"
     },
+    "host": "localhost:8080",
+    "basePath": "/",
     "paths": {
+        "/auth/login": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Логин для получения JWT",
+                "parameters": [
+                    {
+                        "description": "Login data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.LoginResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "produces": [
@@ -31,6 +73,11 @@
         },
         "/pullRequest/create": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -48,8 +95,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.CreatePRRequest"
                         }
                     }
                 ],
@@ -80,6 +126,11 @@
         },
         "/pullRequest/merge": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -97,8 +148,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.MergePRRequest"
                         }
                     }
                 ],
@@ -122,6 +172,11 @@
         },
         "/pullRequest/reassign": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -139,8 +194,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.ReassignPRRequest"
                         }
                     }
                 ],
@@ -169,8 +223,38 @@
                 }
             }
         },
+        "/stats": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Statistics"
+                ],
+                "summary": "Получить статистику назначений",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/team/add": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -184,11 +268,11 @@
                 "parameters": [
                     {
                         "description": "Team data",
-                        "name": "team",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/schemas.Team"
+                            "$ref": "#/definitions/http.CreateTeamRequest"
                         }
                     }
                 ],
@@ -212,6 +296,11 @@
         },
         "/team/get": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -222,6 +311,7 @@
                 "parameters": [
                     {
                         "type": "string",
+                        "example": "\"backend\"",
                         "description": "Team name",
                         "name": "team_name",
                         "in": "query",
@@ -247,6 +337,11 @@
         },
         "/users/getReview": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -257,6 +352,7 @@
                 "parameters": [
                     {
                         "type": "string",
+                        "example": "\"user123\"",
                         "description": "User ID",
                         "name": "user_id",
                         "in": "query",
@@ -283,6 +379,11 @@
         },
         "/users/setIsActive": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -300,8 +401,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/http.SetUserActiveRequest"
                         }
                     }
                 ],
@@ -325,6 +425,112 @@
         }
     },
     "definitions": {
+        "http.CreatePRRequest": {
+            "type": "object",
+            "properties": {
+                "author_id": {
+                    "description": "@Example: user123",
+                    "type": "string",
+                    "example": "user123"
+                },
+                "pull_request_id": {
+                    "description": "@Example: pr-123",
+                    "type": "string",
+                    "example": "pr-123"
+                },
+                "pull_request_name": {
+                    "description": "@Example: \"Add new feature\"",
+                    "type": "string",
+                    "example": "Add new feature"
+                }
+            }
+        },
+        "http.CreateTeamRequest": {
+            "type": "object",
+            "properties": {
+                "members": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.User"
+                    }
+                },
+                "name": {
+                    "description": "@Example: backend",
+                    "type": "string",
+                    "example": "backend"
+                }
+            }
+        },
+        "http.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "description": "@Example: admin",
+                    "type": "string",
+                    "example": "admin"
+                },
+                "user_id": {
+                    "description": "@Example: admin",
+                    "type": "string",
+                    "example": "admin"
+                }
+            }
+        },
+        "http.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "role": {
+                    "description": "@Example: admin",
+                    "type": "string",
+                    "example": "admin"
+                },
+                "token": {
+                    "description": "@Example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                }
+            }
+        },
+        "http.MergePRRequest": {
+            "type": "object",
+            "properties": {
+                "pull_request_id": {
+                    "description": "@Example: pr-123",
+                    "type": "string",
+                    "example": "pr-123"
+                }
+            }
+        },
+        "http.ReassignPRRequest": {
+            "type": "object",
+            "properties": {
+                "old_user_id": {
+                    "description": "@Example: user123",
+                    "type": "string",
+                    "example": "user123"
+                },
+                "pull_request_id": {
+                    "description": "@Example: pr-123",
+                    "type": "string",
+                    "example": "pr-123"
+                }
+            }
+        },
+        "http.SetUserActiveRequest": {
+            "type": "object",
+            "properties": {
+                "is_active": {
+                    "description": "@Example: true",
+                    "type": "boolean",
+                    "example": true
+                },
+                "user_id": {
+                    "description": "@Example: user123",
+                    "type": "string",
+                    "example": "user123"
+                }
+            }
+        },
         "schemas.Team": {
             "type": "object",
             "properties": {
@@ -355,6 +561,14 @@
                     "type": "string"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and JWT token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }
