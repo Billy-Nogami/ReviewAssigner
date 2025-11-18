@@ -1,3 +1,4 @@
+// cmd/init.go
 package main
 
 import (
@@ -5,7 +6,6 @@ import (
 	"os"
 
 	"ReviewAssigner/internal/delivery/http"
-	"ReviewAssigner/internal/delivery/middleware"
 	"ReviewAssigner/internal/repository/postgres"
 	"ReviewAssigner/internal/usecase/pr"
 	"ReviewAssigner/internal/usecase/team"
@@ -14,72 +14,56 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
-	"golang.org/x/exp/slog"
 )
 
 func InitApp() *gin.Engine {
-	// Конфиг из env
-	dbHost := os.Getenv("DB_HOST")
-	dbPort := os.Getenv("DB_PORT")
-	dbName := os.Getenv("DB_NAME")
-	dbUser := os.Getenv("DB_USER")
-	dbPass := os.Getenv("DB_PASS")
+	// === Подключение к БД ===
+	dbHost := getEnv("DB_HOST", "db")
+	dbPort := getEnv("DB_PORT", "5432")
+	dbName := getEnv("DB_NAME", "review_assigner")
+	dbUser := getEnv("DB_USER", "user")
+	dbPass := getEnv("DB_PASS", "pass")
 
-	// Подключение к БД
-	dsn := "host=" + dbHost + " port=" + dbPort + " user=" + dbUser + " password=" + dbPass + " dbname=" + dbName + " sslmode=disable"
+	dsn := "host=" + dbHost +
+		" port=" + dbPort +
+		" user=" + dbUser +
+		" password=" + dbPass +
+		" dbname=" + dbName +
+		" sslmode=disable"
+
 	db, err := sqlx.Connect("postgres", dsn)
 	if err != nil {
 		log.Fatal("Failed to connect to DB:", err)
 	}
 
-	// Репозитории
+	// === Репозитории и UseCase ===
 	userRepo := postgres.NewUserRepository(db)
 	teamRepo := postgres.NewTeamRepository(db)
 	prRepo := postgres.NewPullRequestRepository(db)
 
-	// Usecase
 	teamUsecase := team.NewUsecase(teamRepo)
 	userUsecase := user.NewUsecase(userRepo, prRepo)
 	prUsecase := pr.NewUsecase(userRepo, prRepo)
 
-	// Gin-сервер
+	handlers := http.NewHandlers(teamUsecase, userUsecase, prUsecase)
+
+	// === Gin ===
 	r := gin.Default()
 
-	// Swagger
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	// Публичные роуты
+	r.GET("/health", handlers.Health)
+	r.POST("/auth/login", handlers.Login)
 
-	// Health check (публичный)
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok"})
-	})
+	// Все остальные роуты — защищённые
+	handlers.RegisterRoutes(r)
 
-	// Login (публичный) - временная заглушка
-	r.POST("/auth/login", func(c *gin.Context) {
-		c.JSON(200, gin.H{"token": "test-jwt-token-12345"})
-	})
-
-	// Protected routes
-	protected := r.Group("/")
-	protected.Use(middleware.AuthMiddleware())
-	{
-		handlers := http.NewHandlers(teamUsecase, userUsecase, prUsecase)
-
-		// Регистрируем routes в protected группе
-		protected.POST("/team/add", handlers.CreateTeam)
-		protected.GET("/team/get", handlers.GetTeam)
-		protected.POST("/users/setIsActive", handlers.SetUserActive)
-		protected.GET("/users/getReview", handlers.GetUserReviews)
-		protected.POST("/pullRequest/create", handlers.CreatePR)
-		protected.POST("/pullRequest/merge", handlers.MergePR)
-		protected.POST("/pullRequest/reassign", handlers.ReassignPR)
-		protected.GET("/stats", handlers.GetStats)
-	}
-
-	// Логирование
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	_ = logger
-
+	log.Println("Server initialized successfully")
 	return r
+}
+
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
 }

@@ -31,7 +31,17 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: sh -c "sleep 5 && migrate -path ./migrations -database 'postgres://user:pass@db:5432/review_assigner?sslmode=disable' up && ./main"
+    command: >
+      sh -c "
+        echo 'Waiting for PostgreSQL to be ready...' &&
+        until pg_isready -h db -p 5432 -U user > /dev/null 2>&1; do
+          sleep 1
+        done &&
+        echo 'Applying migrations...' &&
+        migrate -path ./migrations -database 'postgres://user:pass@db:5432/review_assigner?sslmode=disable' up &&
+        echo 'Starting application...' &&
+        ./main
+      "
 
 volumes:
   pgdata:

@@ -10,10 +10,6 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 
-# Генерируем Swagger документацию ПЕРЕД сборкой
-RUN go install github.com/swaggo/swag/cmd/swag@latest
-RUN swag init -g cmd/main.go -o ./docs/
-
 RUN go build -o main ./cmd
 
 # Run stage
@@ -26,9 +22,6 @@ COPY --from=builder /go/bin/migrate /usr/local/bin/migrate
 
 # Copy application binary
 COPY --from=builder /app/main .
-
-# Copy Swagger documentation
-COPY --from=builder /app/docs ./docs
 
 # Copy migrations
 COPY --from=builder /app/migrations ./migrations
